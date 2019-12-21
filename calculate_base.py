@@ -13,18 +13,44 @@ class CalculateBase(object):
     def __init__(self):
         pass
 
-    @staticmethod
-    def cal_stock_beta(ret_series):
+    def cal_stock_factor(self, ret_series):
         """
-        计算单只股票的beta值
+        计算单只股票的因子暴露度
         :param ret_series:
         :return:
         """
         ret_series['beta'] = np.nan
-        for i in range(len(ret_series)-252):
-            temp_df = ret_series.loc[i:i+252]
-            ret_series.loc[i+252, 'beta'] = temp_df['excess_ret'].cov(temp_df['excess_mret'])/np.std(temp_df['excess_mret'])
+        ret_series['dastd'] = np.nan
+        for i in range(len(ret_series)-251):
+            temp_df = ret_series.loc[i:i+251]
+            ret_series.loc[i+251, 'beta'] = self.cal_beta(temp_df, 63)
+            ret_series.loc[i+251, 'dastd'] = self.cal_dastd(temp_df, 42)
         return ret_series
+
+    def cal_beta(self, temp_df, half_life):
+        exp_weight = self.cal_exp_weight(half_life=half_life, length=252)
+        beta = (temp_df['excess_ret'] * exp_weight).cov(temp_df['excess_mret'] * exp_weight) / np.std(temp_df['excess_mret'])
+        return beta
+
+    def cal_dastd(self, temp_df, half_life):
+        # 需要标准化
+        exp_weight = self.cal_exp_weight(half_life=half_life, length=252)
+        dastd = np.std(temp_df['excess_ret']*exp_weight)
+        return dastd
+
+    def cal_hsigma(self, temp_df, half_life):
+        exp_weight = self.cal_exp_weight(half_life=half_life, length=252)
+        hsigma =
+
+    @staticmethod
+    def cal_exp_weight(half_life, length):
+        """
+        生成指数权重
+        :param half_life:
+        :param length:
+        :return:
+        """
+        return np.cumprod(np.repeat(1/np.exp(np.log(2)/half_life), length))[::-1]
 
 
 if __name__ == '__main__':
@@ -38,4 +64,4 @@ if __name__ == '__main__':
     df['excess_ret'] = df['ret'] - df['rf']
     df['excess_mret'] = df['mret'] - df['rf']
 
-    demo.cal_stock_beta(df)
+    demo.cal_dastd(df)
