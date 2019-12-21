@@ -47,7 +47,7 @@ df_mret_rf = pd.merge(df_market, df_free_risk, on='TradingDay')
 
 df_quote['LnMarketCap'] = np.log(df_quote['ClosePrice'] * df_quote['Ashares'])
 df_quote = pd.merge(df_quote, df_mret_rf, on='TradingDay')
-df_quote['rf'] = df_quote['rf']/100
+df_quote['rf'] = df_quote['rf'].apply(lambda x: pow((x/100+1), 1./365)-1)
 df_quote['excess_ret'] = df_quote['ret'] - df_quote['rf']
 df_quote['excess_mret'] = df_quote['mret'] - df_quote['rf']
 
@@ -63,6 +63,7 @@ missing.sort_values(inplace=True)
 # 因子暴露度计算
 time1 = time.time()
 shares_data = []
+count = 0
 groups = df_quote.groupby('SecuCode')
 for share_data in groups:
     ret_series = share_data[1]
@@ -71,10 +72,13 @@ for share_data in groups:
     ret_copy = ret_copy.reset_index(drop=True)
     res = cal.cal_stock_factor(ret_copy)
     shares_data.append(res)
+    count += 1
+    print('完成第%s只股票计算' % count)
 time2 = time.time()
 print('因子计算：%s' % (time2-time1))
 data = pd.concat(shares_data)
 time3 = time.time()
 print('数据合并：%s' % (time3-time2))
+print('finished')
 
 
